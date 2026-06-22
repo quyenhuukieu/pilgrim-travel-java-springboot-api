@@ -46,8 +46,14 @@ jobs:
         run: mvn clean package -DskipTests
 
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Login to Azure
+        uses: azure/login@v2
         with:
-          name: pilgrim-travel-api
-          path: target/*.jar
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: pilgrim-travel-api
+          package: target/*.jar
