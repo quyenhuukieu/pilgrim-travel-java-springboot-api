@@ -15,6 +15,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> {})
+                // TEMPORARY: Authentication disabled during MVP development.
+                // Replace with JWT authentication before production release.
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
                 )
