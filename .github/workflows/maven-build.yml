@@ -3,11 +3,11 @@ name: Spring Boot Maven Build
 on:
   push:
     branches:
-      - main
+      - master
 
   pull_request:
     branches:
-      - main
+      - master
 
 
 jobs:
