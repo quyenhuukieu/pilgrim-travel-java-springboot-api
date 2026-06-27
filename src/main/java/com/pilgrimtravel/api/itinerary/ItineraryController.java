@@ -1,9 +1,10 @@
 package com.pilgrimtravel.api.itinerary;
 
-import com.pilgrimtravel.api.itinerary.Itinerary;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -17,30 +18,50 @@ public class ItineraryController {
         this.service = service;
     }
 
-    @GetMapping("/user/{userId}")
-    public List<Itinerary> getUserItineraries(@PathVariable Long userId) {
-        return service.findAllByUser(userId);
+    // GET all itineraries for logged-in user
+    @GetMapping("/user")
+    public List<Itinerary> getUserItineraries(Authentication authentication) {
+        System.out.println("HIT CONTROLLER");
+        String email = authentication.getName();
+        System.out.println(
+                "Controller authentication = " +
+                        authentication.getName()
+        );
+        return service.findAllByUser(email);
     }
 
+    // GET by id
     @GetMapping("/{id}")
-    public Itinerary getById(@PathVariable Long id) {
-        return service.findById(id);
+    public Itinerary getById(Authentication authentication,
+                             @PathVariable Long id) {
+        String email = authentication.getName();
+        return service.findById(email, id);
     }
 
+    // CREATE
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Itinerary create(@Valid @RequestBody Itinerary itinerary) {
-        return service.create(itinerary);
+    public Itinerary create(Authentication authentication,
+                            @Valid @RequestBody Itinerary itinerary) {
+        String email = authentication.getName();
+        return service.create(email, itinerary);
     }
 
+    // UPDATE
     @PutMapping("/{id}")
-    public Itinerary update(@PathVariable Long id, @RequestBody Itinerary itinerary) {
-        return service.update(id, itinerary);
+    public Itinerary update(Authentication authentication,
+                            @PathVariable Long id,
+                            @Valid @RequestBody Itinerary itinerary) {
+        String email = authentication.getName();
+        return service.update(email, id, itinerary);
     }
 
+    // DELETE
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public void delete(Authentication authentication,
+                       @PathVariable Long id) {
+        String email = authentication.getName();
+        service.delete(email, id);
     }
 }

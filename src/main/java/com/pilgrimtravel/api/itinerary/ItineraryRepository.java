@@ -1,6 +1,5 @@
 package com.pilgrimtravel.api.itinerary;
 
-import com.pilgrimtravel.api.itinerary.Itinerary;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 

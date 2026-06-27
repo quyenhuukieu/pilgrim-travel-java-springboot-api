@@ -1,4 +1,4 @@
-package com.pilgrimtravel.api;
+package com.pilgrimtravel.api.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

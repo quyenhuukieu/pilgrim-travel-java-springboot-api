@@ -1,4 +1,4 @@
-package com.pilgrimtravel.api.config;
+package com.pilgrimtravel.api.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +19,7 @@ public class CorsConfig {
 
         configuration.setAllowedOrigins(
                 List.of(
-                        "http://localhost:3000",
+                        "http://localhost:5173",
                         "https://pilgrim-travel.azurestaticapps.net"
                 )
         );
@@ -38,6 +38,7 @@ public class CorsConfig {
                 List.of("*")
         );
 
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();

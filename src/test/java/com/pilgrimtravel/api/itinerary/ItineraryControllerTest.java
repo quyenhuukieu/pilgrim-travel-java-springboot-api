@@ -1,145 +1,193 @@
 package com.pilgrimtravel.api.itinerary;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.mockito.Mockito;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.assertj.MockMvcTester;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.pilgrimtravel.api.auth.User;
+import com.pilgrimtravel.api.security.JwtAuthFilter;
+import com.pilgrimtravel.api.security.JwtService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ItineraryController.class) // Focuses ONLY on your controller web layer
+@WebMvcTest(ItineraryController.class)
 class ItineraryControllerTest {
 
     @Autowired
-    private MockMvcTester mockMvc;
+    private MockMvc mockMvc;
 
     @MockitoBean
     private ItineraryService itineraryService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @MockitoBean
+    private JwtService jwtService;
 
-    // =========================================================================
-    // 1. GET BY ID OPERATION (Verifying Single Object Retrieval)
-    // =========================================================================
-    @Test
-    @WithMockUser(username = "admin", roles = {"USER"})
-    void getItineraryById_returnsOkStatusAndSingleObject() throws Exception {
-        // Arrange: Prepare expected domain entity mock data matching target ID 123L
-        Itinerary expectedItinerary = new Itinerary(123L, 456L, "Fatima", LocalDate.of(2026, 10, 1), false);
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
-        // Stub the exact findById service call to bypass real database extraction
-        Mockito.when(itineraryService.findById(123L)).thenReturn(expectedItinerary);
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
-        // Act & Assert using modern Spring Boot 4.1 Fluent BodyJson Mapping
-        assertThat(this.mockMvc.get().uri("/api/itineraries/123"))
-                .hasStatusOk() // Verifies HTTP 200 OK
-                .bodyJson() // Evaluates response payload tree via Jackson 3
-                .convertTo(Itinerary.class) // Maps the singular JSON object into our typed class
-                .usingRecursiveComparison() // Inspects fields recursively by value
-                .isEqualTo(expectedItinerary); // Direct structural object validation!
+    @BeforeEach
+    void setUp() {
+        // 🌟 Force Jackson to write dates as ISO strings instead of numeric arrays
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
-    // =========================================================================
-    // 2. GET BY USER ID OPERATION (Verifying List of Object Retrieval)
-    // =========================================================================
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public FilterRegistrationBean<JwtAuthFilter> registration(JwtAuthFilter filter) {
+            FilterRegistrationBean<JwtAuthFilter> registration = new FilterRegistrationBean<>(filter);
+            // This flag explicitly tells the test servlet wrapper NOT to execute this filter
+            registration.setEnabled(false);
+            return registration;
+        }
+    }
+
+    private UsernamePasswordAuthenticationToken mockAuthentication() {
+
+        User user = new User(
+                1L,
+                "test@example.com",
+                "encoded-password-placeholder"
+        );
+
+        return new UsernamePasswordAuthenticationToken(
+                user,
+                null,
+                user.getAuthorities()
+        );
+    }
+
+    // =========================
+    // GET BY ID
+    // =========================
     @Test
-    @WithMockUser(username = "admin", roles = {"USER"}) // Generates a valid test security token
+    void getItineraryById_returnsOk() throws Exception {
+        // 1. Setup sample payload
+        Itinerary itinerary = new Itinerary(
+                123L, 1L, "Rome", LocalDate.of(2026, 10, 1), false
+        );
+
+        String email = "test@example.com";
+
+        // 2. Mock the controller's internal business logic
+        Mockito.when(itineraryService.findById(email,123L))
+                .thenReturn(itinerary);
+
+        mockMvc.perform(get("/api/itineraries/123")
+                .principal(mockAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(itinerary)));
+    }
+
+    // =========================
+    // GET USER ITINERARIES
+    // =========================
+    @Test
     void getUserItineraries_returnsList() throws Exception {
-        // Arrange
-        Itinerary it1 = new Itinerary(1L, 123L, "Fatima", LocalDate.of(2026, 10, 1), false);
-        Itinerary it2 = new Itinerary(2L, 123L, "Rome", LocalDate.of(2026, 10, 5), true);
+        // 1. Setup sample payload
+        List<Itinerary> sample = List.of(
+                new Itinerary(1L, 1L, "Rome", LocalDate.now(), false),
+                new Itinerary(2L, 1L, "Paris", LocalDate.now(), true)
+        );
 
-        List<Itinerary> sample = List.of(it1, it2);
+        String email = "test@example.com";
 
-        Mockito.when(itineraryService.findAllByUser(123L)).thenReturn(sample);
+        // 2. Mock the controller's internal business logic
+        Mockito.when(itineraryService.findAllByUser(email)).thenReturn(sample);
 
-        // Act & Assert using Spring Boot 4.1 Fluent BodyJson Mapping
-        assertThat(this.mockMvc.get().uri("/api/itineraries/user/123"))
-                .hasStatusOk()
-                .bodyJson() // 1. Swaps from raw text body to the dedicated Jackson JSON tree assertion handler
-                .convertTo(InstanceOfAssertFactories.list(Itinerary.class)) // 2. Maps the array payload into a clean List<Itinerary>
-                .usingRecursiveComparison() // 3. Recursively walks through collection elements element-by-element
-                .ignoringFields("id")
-                .isEqualTo(sample);
+        // 3. Execute MockMvc by forcing the mock security token into the request context
+        mockMvc.perform(get("/api/itineraries/user")
+                .principal(mockAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(sample)));
     }
 
-    // =========================================================================
-    // 3. POST OPERATION (With @ResponseStatus(HttpStatus.CREATED) Assertion)
-    // =========================================================================
+    // =========================
+    // CREATE
+    // =========================
     @Test
-    @WithMockUser(username = "admin", roles = {"USER"})
-    void createItinerary_returnsCreatedStatusAndObject() throws Exception {
-        // Arrange incoming request body and expected saved database output
-        Itinerary inputItinerary = new Itinerary(null, 123L, "Lourdes", LocalDate.of(2026, 11, 1), false);
-        Itinerary savedItinerary = new Itinerary(99L, 123L, "Lourdes", LocalDate.of(2026, 11, 1), false);
+    void createItinerary_returnsCreated() throws Exception {
+        // 1. Setup sample payload
+        Itinerary input = new Itinerary(
+                null, 1L, "Lourdes", LocalDate.of(2026, 11, 1), false
+        );
 
-        Mockito.when(itineraryService.create(any(Itinerary.class))).thenReturn(savedItinerary);
+        Itinerary saved = new Itinerary(
+                99L, 1L, "Lourdes", LocalDate.of(2026, 11, 1), false
+        );
 
-        // Act & Assert
-        assertThat(this.mockMvc.post()
-                .uri("/api/itineraries")
-                .with(csrf()) // CRITICAL: Spring Security requires CSRF tokens on state-changing requests
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(inputItinerary)))
-                .hasStatus(HttpStatus.CREATED) // Binds natively to HttpStatus.CREATED (201) assertion
-                .bodyJson()
-                .convertTo(Itinerary.class)
-                .usingRecursiveComparison()
-                .ignoringFields("id") // The saved entity gets an assigned database ID
-                .isEqualTo(savedItinerary);
+        // 2. Mock the controller's internal business logic
+        Mockito.when(itineraryService.create(eq("test@example.com"), any(Itinerary.class)))
+                .thenReturn(saved);
+
+        mockMvc.perform(post("/api/itineraries")
+                        .with(csrf())
+                        .principal(mockAuthentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(input)))
+                .andExpect(status().isCreated())
+                .andExpect(content().json(objectMapper.writeValueAsString(saved)));
     }
 
-    // =========================================================================
-    // 4. PUT OPERATION
-    // =========================================================================
+    // =========================
+    // UPDATE
+    // =========================
     @Test
-    @WithMockUser(username = "admin", roles = {"USER"})
-    void updateItinerary_returnsOkStatusAndUpdatedObject() throws Exception {
-        // Arrange updating itinerary with ID 99L
-        Itinerary updatedDetails = new Itinerary(99L, 123L, "Updated Rome", LocalDate.of(2026, 10, 6), true);
+    void updateItinerary_returnsOk() throws Exception {
+        // 1. Setup sample payload
+        Itinerary updated = new Itinerary(
+                99L, 1L, "Updated Rome", LocalDate.of(2026, 10, 6), true
+        );
 
-        Mockito.when(itineraryService.update(eq(99L), any(Itinerary.class))).thenReturn(updatedDetails);
+        // 2. Mock the controller's internal business logic
+        Mockito.when(itineraryService.update(eq("test@example.com"), eq(99L), any(Itinerary.class)))
+                .thenReturn(updated);
 
-        // Act & Assert
-        assertThat(this.mockMvc.put()
-                .uri("/api/itineraries/99")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(updatedDetails)))
-                .hasStatusOk() // Verifies implicit HTTP 200 status
-                .bodyJson()
-                .convertTo(Itinerary.class)
-                .usingRecursiveComparison()
-                .isEqualTo(updatedDetails);
+        mockMvc.perform(put("/api/itineraries/99")
+                        .with(csrf())
+                        .principal(mockAuthentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updated)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(updated)));
     }
 
-    // =========================================================================
-    // 5. DELETE OPERATION (With @ResponseStatus(HttpStatus.NO_CONTENT) Assertion)
-    // =========================================================================
+    // =========================
+    // DELETE
+    // =========================
     @Test
-    @WithMockUser(username = "admin", roles = {"USER"})
-    void deleteItinerary_returnsNoContentStatus() throws Exception {
-        // Act & Assert
-        assertThat(this.mockMvc.delete()
-                .uri("/api/itineraries/99")
-                .with(csrf()))
-                .hasStatus(HttpStatus.NO_CONTENT); // Binds to HttpStatus.NO_CONTENT (204) assertion
+    void deleteItinerary_returnsNoContent() throws Exception {
+        String email = "test@example.com";
+        Mockito.doNothing().when(itineraryService).delete(email, 99L);
 
-        // Verify that the downstream service layer deletion rule was exactly executed once
-        Mockito.verify(itineraryService, Mockito.times(1)).delete(99L);
+        mockMvc.perform(delete("/api/itineraries/99")
+                        .with(csrf())
+                .principal(mockAuthentication()))
+                .andExpect(status().isNoContent());
+
+        Mockito.verify(itineraryService).delete(email,99L);
     }
 }

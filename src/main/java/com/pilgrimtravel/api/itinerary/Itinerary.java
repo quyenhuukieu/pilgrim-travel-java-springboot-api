@@ -1,5 +1,6 @@
 package com.pilgrimtravel.api.itinerary;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,7 +22,7 @@ public class Itinerary {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
+    @JsonIgnore
     private Long userId; // associate itinerary with logged-in user
 
     @NotBlank
