@@ -1,6 +1,7 @@
 package com.pilgrimtravel.api.email;
 
 import com.pilgrimtravel.api.email.config.SendGridConfig;
+import com.pilgrimtravel.api.email.dto.EmailProperties;
 import com.pilgrimtravel.api.email.dto.EmailRequest;
 import com.sendgrid.Request;
 import com.sendgrid.Response;
@@ -20,7 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 // We isolate this slice test by importing only the components needed for the email feature
-@SpringBootTest(classes = {SendGridEmailService.class})
+@SpringBootTest(classes = {SendGridEmailService.class, EmailProperties.class})
 @Import(SendGridConfig.class)
 public class SendGridEmailServiceTest {
 

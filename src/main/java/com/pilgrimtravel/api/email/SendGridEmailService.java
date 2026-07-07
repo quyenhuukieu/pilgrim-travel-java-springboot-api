@@ -1,5 +1,6 @@
 package com.pilgrimtravel.api.email;
 
+import com.pilgrimtravel.api.email.dto.EmailProperties;
 import com.pilgrimtravel.api.email.dto.EmailRequest;
 import com.sendgrid.Method;
 import com.sendgrid.Request;
@@ -14,14 +15,16 @@ import java.io.IOException;
 @Service
 public class SendGridEmailService implements EmailService{
     private final SendGrid sendGrid;
+    private final EmailProperties emailProperties;
 
-    public SendGridEmailService(SendGrid sendGrid) {
+    public SendGridEmailService(SendGrid sendGrid, EmailProperties emailProperties) {
         this.sendGrid = sendGrid;
+        this.emailProperties = emailProperties;
     }
 
     @Override
     public boolean sendEmail(EmailRequest emailRequest) {
-        Email from = new Email("your-verified-sendgrid-sender@example.com");
+        Email from = new Email(emailProperties.getFromAddress());
         Email to = new Email(emailRequest.getTo());
         Content content = new Content("text/plain", emailRequest.getBody());
         Mail mail = new Mail(from, emailRequest.getSubject(), to, content);
