@@ -8,6 +8,8 @@ import com.pilgrimtravel.api.email.EmailService;
 import com.pilgrimtravel.api.email.dto.EmailRequest;
 import com.pilgrimtravel.api.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+    private static final Logger log = LogManager.getLogger(UserService.class);
     // Main user business logic
 
     private final UserRepository userRepository;
@@ -49,6 +52,7 @@ public class UserService {
         try {
             emailService.sendEmail(emailRequest);
         } catch (Exception ex) {
+            log.info(ex);
             throw new RuntimeException("Failed to send email");
         }
 
