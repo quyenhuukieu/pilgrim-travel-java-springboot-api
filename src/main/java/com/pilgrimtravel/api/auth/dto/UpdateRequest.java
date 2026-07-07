@@ -1,7 +1,10 @@
 package com.pilgrimtravel.api.auth.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.AssertFalse;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,19 +12,15 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RegisterRequest {
-
+public class UpdateRequest {
     // DTO for user account creation data
-    @NotBlank(message = "Email cannot be blank")
     @Email(message = "Please provide a valid email address")
     private String email;
 
-    @NotBlank(message = "Password cannot be blank")
     @Size(min = 6, max = 100)
     private String password;
 
     // Forces validation failure if a client passes "true"
     @AssertFalse(message = "New registrations cannot be pre-verified")
-    @JsonProperty("isVerified")
     private boolean isVerified = false;
 }

@@ -3,6 +3,8 @@ package com.pilgrimtravel.api.auth;
 import com.pilgrimtravel.api.auth.dto.AuthResponse;
 import com.pilgrimtravel.api.auth.dto.LoginRequest;
 import com.pilgrimtravel.api.auth.dto.RegisterRequest;
+import com.pilgrimtravel.api.email.EmailService;
+import com.pilgrimtravel.api.email.dto.EmailRequest;
 import com.pilgrimtravel.api.security.JwtService;
 
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,8 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
+    @Mock
+    private EmailService emailService;
 
     public UserServiceTest() {
         MockitoAnnotations.openMocks(this);
@@ -50,7 +54,9 @@ class UserServiceTest {
     void shouldRegisterUserSuccessfully() {
 
         RegisterRequest request =
-                new RegisterRequest("test@example.com", "password123");
+                new RegisterRequest("test@example.com",
+                        "password123",
+                        false);
 
         when(userRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.empty());
@@ -61,6 +67,9 @@ class UserServiceTest {
         when(jwtService.generateToken(any(User.class)))
                 .thenReturn("jwt-token");
 
+        when(emailService.sendEmail(any(EmailRequest.class)))
+                .thenReturn(true);
+
         AuthResponse response =
                 userService.register(request);
 
@@ -68,6 +77,7 @@ class UserServiceTest {
         assertEquals("jwt-token", response.getToken());
 
         verify(userRepository).save(any(User.class));
+        verify(emailService).sendEmail(any(EmailRequest.class));
     }
 
 

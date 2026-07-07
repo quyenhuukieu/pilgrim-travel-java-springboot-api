@@ -43,7 +43,8 @@ class AuthControllerTest {
         RegisterRequest request =
                 new RegisterRequest(
                         "test@example.com",
-                        "password123"
+                        "password123",
+                        false
                 );
 
 
@@ -111,7 +112,8 @@ class AuthControllerTest {
         RegisterRequest request =
                 new RegisterRequest(
                         "",
-                        "password123"
+                        "password123",
+                        false
                 );
 
 
@@ -131,7 +133,8 @@ class AuthControllerTest {
         RegisterRequest request =
                 new RegisterRequest(
                         "test@example.com",
-                        ""
+                        "",
+                        false
                 );
 
 

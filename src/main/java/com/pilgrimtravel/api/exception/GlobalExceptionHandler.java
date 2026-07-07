@@ -21,4 +21,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleUserNotFound(UsernameNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
+
+    // Catches database or resource state conflicts (HTTP 409)
+    @ExceptionHandler(ResourceConflictException.class)
+    public ResponseEntity<String> handleResourceConflict(ResourceConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
 }

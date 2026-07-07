@@ -151,6 +151,13 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
+        <!-- Twilio SendGrid -->
+        <dependency>
+            <groupId>com.sendgrid</groupId>
+            <artifactId>sendgrid-java</artifactId>
+            <version>4.10.3</version>
+        </dependency>
+
     </dependencies>
 
     <build>

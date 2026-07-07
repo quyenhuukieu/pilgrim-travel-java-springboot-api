@@ -70,7 +70,8 @@ class ItineraryControllerTest {
         User user = new User(
                 1L,
                 "test@example.com",
-                "encoded-password-placeholder"
+                "encoded-password-placeholder",
+                false
         );
 
         return new UsernamePasswordAuthenticationToken(

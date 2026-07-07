@@ -27,6 +27,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
+    private boolean isVerified;
+
     // Standard Spring Security methods required for authentication
     @Override
     public String getUsername() { return email; }
